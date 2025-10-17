@@ -4,6 +4,7 @@ import re
 import csv
 from collections import Counter, defaultdict
 import random
+import pandas as pd
 
 INPUT_FILE = "twitter-small.tsv"
 OUTPUT_FILE = "twitter-graph.csv"
@@ -110,7 +111,7 @@ def plot_degree_distributions(Graph, dataset):
     plt.savefig(f'degree_distribution_{dataset}.png')
     plt.show()
 
-plot_degree_distributions(G, 'twitter-graph.csv')
+#plot_degree_distributions(G, 'twitter-graph.csv')
 
 #distance distribution for largest weekly conneceted componenets
 
@@ -139,4 +140,46 @@ def plot_distance_distribution(graph, dataset):
     plt.show()
 
 
-plot_distance_distribution(G, 'twitter-graph.csv')
+#plot_distance_distribution(G, 'twitter-graph.csv')
+
+#Q3.3
+
+#degree centrality
+degree_centrality = nx.degree_centrality(G_giant)
+
+#betweenness centrality
+betweenness_centrality = nx.betweenness_centrality(G_giant, weight='weight', normalized=True)
+
+
+#closeness centrality
+closeness_centrality = nx.closeness_centrality(G_giant)
+
+#top 20 nodes for each centrality measure
+df = pd.DataFrame({
+
+    'Degree Centrality': pd.Series(degree_centrality),
+    'Betweenness Centrality': pd.Series(betweenness_centrality),
+    'Closeness Centrality': pd.Series(closeness_centrality)
+
+})
+
+top_20_degree = df['Degree Centrality'].nlargest(20)
+top_20_betweenness = df['Betweenness Centrality'].nlargest(20)
+top_20_closeness = df['Closeness Centrality'].nlargest(20)
+
+print("Top 20 nodes by Degree Centrality:")
+print(top_20_degree)    
+print("\nTop 20 nodes by Betweenness Centrality:")
+print(top_20_betweenness)
+print("\nTop 20 nodes by Closeness Centrality:")
+print(top_20_closeness)
+
+#rank correlation between centrality measures
+corr_degree_betweenness = df['Degree Centrality'].rank().corr(df['Betweenness Centrality'].rank(), method='pearson')
+corr_degree_closeness = df['Degree Centrality'].rank().corr(df['Closeness Centrality'].rank(), method='pearson')
+corr_betweenness_closeness = df['Betweenness Centrality'].rank().corr(df['Closeness Centrality'].rank(), method='pearson')  
+
+print(f"\nRank correlation between Degree and Betweenness Centrality: {corr_degree_betweenness}")
+print(f"Rank correlation between Degree and Closeness Centrality: {corr_degree_closeness}")
+print(f"Rank correlation between Betweenness and Closeness Centrality: {corr_betweenness_closeness}")
+
