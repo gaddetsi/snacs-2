@@ -30,8 +30,8 @@ from scipy.stats import spearmanr
 # Configuration / Regex
 # -----------------------
 USERNAME_REGEX = re.compile(r'@([A-Za-z0-9_]{1,15})')  # valid Twitter usernames
-DEFAULT_INPUT = "twitter-small.tsv"
-DEFAULT_OUTPUT = "twitter_graph.csv"
+DEFAULT_INPUT = "twitter-larger.tsv"
+DEFAULT_OUTPUT = "twitter_graph_larger.csv"
 
 # -----------------------
 # Utilities

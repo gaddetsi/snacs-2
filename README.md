@@ -230,3 +230,18 @@ bet vs close: 0.322
   Community 3: size=4977  (sample members: ['_mom24', 'candice202', 'camodadogg', 'nnus', 'ecosandy', 'grahamfarrar', 'farmafrica', 'simpliflying', 'threebysea', 'nealfrankle'])
   Community 4: size=3274  (sample members: ['glueazy', 'etanowitz', 'slimmduddy', 'charissarobins', 'deltaladytoday', 'insidehoops', 'kpdolla', 'coolnerdgav', 'reallamarodom', 'mistyhofstetter'])
   Community 5: size=2803  (sample members: ['kellycairns', 'imageisfound', 'aqhhof', 'flowersbyfarha', 'cullenhelen', 'jrwadsworth18', 'tnpd', 'tweeterism', 'photonconcepts', 'jcverdie'])
+
+  [i] Parsed twitter-larger.tsv -> twitter_graph_larger.csv
+[i] Total unique edges (before threshold): 1275114
+[i] Unique edges written (w >= 1): 1275114
+[i] Unique nodes encountered: 471077
+[i] Nodes: 471077  Edges: 1275114  Density: 0.000006
+[i] Strongly connected components: 413269  (largest sizes: [54895, 15, 9, 7, 7])
+[i] Weakly connected components: 10077  (largest sizes: [441346, 50, 29, 26, 24])
+[i] Average clustering coefficient (undirected): 0.100980
+[i] Giant component nodes: 441346, edges: 1203210
+[i] Connected sample nodes: 200, edges: 805
+[i] Approximated average distance (sample_size=200): 1.9595
+[i] Saved degree scatter (log-log) to degree_scatter_twitter-larger.png
+[i] Saved distance distribution plot to distance_dist_twitter-larger.png
+[i] Saved weight distribution (log-log) to weight_dist_twitter-larger.png
