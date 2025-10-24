@@ -240,41 +240,58 @@ def plot_degree_scatter_log(G, dataset_tag="dataset", save_prefix="degree_scatte
 # -----------------------
 # Distance distribution plotting (log y)
 # -----------------------
-def plot_distance_distribution_log_y(G_undirected, dataset_tag="dataset", sample_bfs_size=500, save_prefix="distance_dist"):
-    """
-    Compute distances inside giant component (or BFS connected sample) and plot frequency vs distance.
-    Use log scale on y-axis to aid readability for long tail.
-    For big graphs, we use a BFS sample to get connected nodes and compute distances between them.
-    """
-    if G_undirected.number_of_nodes() == 0:
-        print("[i] Empty graph for distances")
-        return
+# -----------------------
+# Distance distribution plotting (log y)
+# -----------------------
+def plot_distance_distribution(graph, dataset):
+    # largest WCC (nodes) and undirected subgraph
+    largest_wcc = max(nx.weakly_connected_components(graph), key=len)
+    subgraph = graph.subgraph(largest_wcc).to_undirected()
 
-    # ensure connected sample
-    sample_sub = bfs_sample_subgraph(G_undirected, sample_bfs_size)
-    dist_counts = Counter()
-    for u in sample_sub.nodes():
-        lengths = nx.single_source_shortest_path_length(sample_sub, u)
-        for v, d in lengths.items():
-            if u != v:
-                dist_counts[d] += 1
+    distance_counts = Counter()
+    for node in subgraph.nodes():
+        lengths = nx.single_source_shortest_path_length(subgraph, node)
+        for target, dist in lengths.items():
+            if node != target:
+                distance_counts[dist] += 1
 
-    distances = sorted(dist_counts.items())
-    x = [d for d, cnt in distances]
-    y = [cnt for d, cnt in distances]
+    # If you want pairwise (unordered) counts instead of counting each pair twice
+    # (since BFS from every node counts u->v and v->u separately in an undirected graph),
+    # uncomment the next line:
+    # for k in distance_counts: distance_counts[k] //= 2
 
+    # Prepare x and y in sorted order
+    distances = sorted(distance_counts.items())
+    if not distances:
+        raise RuntimeError("No distances found in the largest WCC")
+
+    x_all, y_all = zip(*distances)
+    x_all = np.array(x_all, dtype=int)
+    y_all = np.array(y_all, dtype=float)
+
+    # Remove zero-count bins (log scale can't plot zeros)
+    mask = y_all > 0
+    x = x_all[mask]
+    y = y_all[mask]
+
+    # Plot
     plt.figure(figsize=(8, 6))
-    plt.bar(x, y, edgecolor='black')
-    plt.yscale('log')
-    plt.xlabel('Shortest path distance')
-    plt.ylabel('Frequency (log scale)')
-    plt.title(f'Distance distribution (sample size {sample_sub.number_of_nodes()}) - {dataset_tag}')
-    fname = f'{save_prefix}_{dataset_tag}.png'
-    plt.tight_layout()
-    plt.savefig(fname, dpi=200)
-    plt.close()
-    print(f"[i] Saved distance distribution plot to {fname}")
+    plt.bar(x, y, color='mediumseagreen', edgecolor='black', width=0.8)
 
+    # Set log scale on y-axis (matches "Frequency (log scale)" label)
+    plt.yscale('log')
+    plt.ylabel('Frequency (log scale)')
+    plt.xlabel('Distance')
+    plt.title(f'Distance Distribution in Largest WCC ({dataset} dataset)')
+
+    # Use integer ticks for distance (1,2,3,...)
+    xmin, xmax = int(x.min()), int(x.max())
+    plt.xticks(np.arange(xmin, xmax + 1))
+    plt.xlim(xmin - 0.5, xmax + 0.5)
+
+    plt.tight_layout()
+    plt.savefig(f'distance_distribution_{dataset}.png', dpi=150, bbox_inches='tight')
+    plt.show()
 # -----------------------
 # Weight distribution plot
 # -----------------------
@@ -419,7 +436,7 @@ def run_full_pipeline(input_tsv,
                       output_csv="mention_graph.csv",
                       min_mentions_threshold=1,
                       sample_bfs_size=500,
-                      distance_sample_size=200,
+                      distance_sample_size=500,
                       degree_scatter_prefix="degree_scatter",
                       distance_plot_prefix="distance_dist",
                       weight_plot_prefix="weight_dist",
@@ -441,54 +458,54 @@ def run_full_pipeline(input_tsv,
         print(f"[i] Nodes: {stats['nodes']}  Edges: {stats['edges']}  Density: {stats['density']:.6f}")
 
     # 3) Components
-    comps = compute_components_stats(G)
-    if verbose:
-        print(f"[i] Strongly connected components: {comps['num_strong']}  (largest sizes: {comps['strong_sizes'][:5]})")
-        print(f"[i] Weakly connected components: {comps['num_weak']}  (largest sizes: {comps['weak_sizes'][:5]})")
+    # comps = compute_components_stats(G)
+    # if verbose:
+    #     print(f"[i] Strongly connected components: {comps['num_strong']}  (largest sizes: {comps['strong_sizes'][:5]})")
+    #     print(f"[i] Weakly connected components: {comps['num_weak']}  (largest sizes: {comps['weak_sizes'][:5]})")
 
-    # 4) Clustering coefficient (undirected average)
-    avg_clust = average_clustering_undirected(G)
-    if verbose:
-        print(f"[i] Average clustering coefficient (undirected): {avg_clust:.6f}")
+    # # 4) Clustering coefficient (undirected average)
+    # avg_clust = average_clustering_undirected(G)
+    # if verbose:
+    #     print(f"[i] Average clustering coefficient (undirected): {avg_clust:.6f}")
 
-    # 5) Giant component (undirected) for distances and plots
-    largest_weak = max(nx.weakly_connected_components(G), key=len)
-    G_giant = G.subgraph(largest_weak).copy()
-    G_undirected = G_giant.to_undirected()
+    # # 5) Giant component (undirected) for distances and plots
+    # largest_weak = max(nx.weakly_connected_components(G), key=len)
+    # G_giant = G.subgraph(largest_weak).copy()
+    # G_undirected = G_giant.to_undirected()
 
-    if verbose:
-        print(f"[i] Giant component nodes: {G_undirected.number_of_nodes()}, edges: {G_undirected.number_of_edges()}")
+    # if verbose:
+    #     print(f"[i] Giant component nodes: {G_undirected.number_of_nodes()}, edges: {G_undirected.number_of_edges()}")
 
-    # 6) Approx avg distance using connected BFS sample
-    avg_dist, sample_sub = approx_avg_distance_connected_sample(G_undirected, sample_size=distance_sample_size, verbose=verbose)
+    # # 6) Approx avg distance using connected BFS sample
+    # avg_dist, sample_sub = approx_avg_distance_connected_sample(G_undirected, sample_size=distance_sample_size, verbose=verbose)
 
-    # 7) Degree scatter plots (log-log)
-    plot_degree_scatter_log(G, dataset_tag=input_tsv.replace('.tsv',''), save_prefix=degree_scatter_prefix)
+    # # 7) Degree scatter plots (log-log)
+    # plot_degree_scatter_log(G, dataset_tag=input_tsv.replace('.tsv',''), save_prefix=degree_scatter_prefix)
 
     # 8) Distance distribution (log y)
-    plot_distance_distribution_log_y(G_undirected, dataset_tag=input_tsv.replace('.tsv',''), sample_bfs_size=sample_bfs_size, save_prefix=distance_plot_prefix)
+    plot_distance_distribution(G, dataset=input_tsv.replace('.tsv',''))
 
-    # 9) Weight distribution plot
-    plot_weight_distribution(edges_dict, dataset_tag=input_tsv.replace('.tsv',''), save_prefix=weight_plot_prefix)
+    # # 9) Weight distribution plot
+    # plot_weight_distribution(edges_dict, dataset_tag=input_tsv.replace('.tsv',''), save_prefix=weight_plot_prefix)
 
-    # 10) Centralities and ranking similarity
-    centrality_res = compute_and_report_centralities(G, topk=20, dataset_tag=input_tsv.replace('.tsv',''))
+    # # 10) Centralities and ranking similarity
+    # centrality_res = compute_and_report_centralities(G, topk=20, dataset_tag=input_tsv.replace('.tsv',''))
 
-    # 11) Community detection
-    comms = detect_communities_greedy(G, top_k_communities=5)
+    # # 11) Community detection
+    # comms = detect_communities_greedy(G, top_k_communities=5)
 
     # Return collected results
     return {
         'G': G,
-        'G_giant': G_giant,
-        'G_undirected': G_undirected,
+        #'G_giant': G_giant,
+        #'G_undirected': G_undirected,
         'stats': stats,
-        'components': comps,
-        'avg_clustering': avg_clust,
-        'avg_distance': avg_dist,
-        'sample_subgraph': sample_sub,
-        'centrality_res': centrality_res,
-        'communities': comms
+        #'components': comps,
+        #'avg_clustering': avg_clust,
+       # 'avg_distance': avg_dist,
+       # 'sample_subgraph': sample_sub,
+        #'centrality_res': centrality_res,
+       # 'communities': comms
     }
 
 # -----------------------
